@@ -80,7 +80,7 @@ addDepartment = () => {
 }   
 
 addRole = () => {
-    db.query(`SELECT * FROM department`, function (err, res) {
+    db.query(`SELECT title AS "Title" FROM role`, function (err, res) {
         if (err) throw err;
         
         inquirer.prompt([
@@ -109,9 +109,9 @@ addRole = () => {
                 },
             }
         ]) .then((data) => {
-                db.query(`INSERT INTO employee_role(title, salary, department_id)
+                db.query(`INSERT INTO role(title, salary, department_id)
                 VALUES ("${data.role}", "${data.salary}",
-                (SELECT id FROM departments WHERE department_name = "${data.dept}"));`
+                (SELECT id FROM departments WHERE name = "${data.dept}"));`
                 )
             mainPrompt();
         })
@@ -119,7 +119,7 @@ addRole = () => {
 }
 
 addEmployee = () => {
-    db.query(`SELECT * from roles; SELECT CONCAT (employee.first_name," ",employee.last_name) AS full_name FROM employee`)
+    db.query(`SELECT * from role; SELECT CONCAT (employee.first_name," ",employee.last_name) AS full_name FROM employee`)
     inquirer.prompt([
         {
             type: 'input',
@@ -148,8 +148,8 @@ addEmployee = () => {
     ]) .then((data) => {
         db.query(
             `INSERT INTO employee(first_name, last_name, role_id, manager_id) 
-            VALUES(?, ?, (SELECT id FROM employee_role WHERE title = ?),
-            (SELECT id FROM (SELECT id FROM employee_role WHERE CONCAT(first_name," ",last_name) = ? ) AS emptable))`, [data.first_name, data.last_name, data.role, data.manager]
+            VALUES(?, ?, (SELECT id FROM role WHERE title = ?),
+            (SELECT id FROM (SELECT id FROM role WHERE CONCAT(first_name," ",last_name) = ? ) AS emptable))`, [data.first_name, data.last_name, data.role, data.manager]
         )
         mainPrompt();
     })
@@ -165,7 +165,7 @@ showEmployees = () => {
 }
 
 showDepartments = () => {
-  db.query(`SELECT`,
+  db.query(`SELECT * FROM department`,
   function (err, res) {
     if (err) throw err;
     console.table(res);
@@ -174,7 +174,7 @@ showDepartments = () => {
 }
 
 showRoles = () => {
-  db.query(`SELECT`,
+  db.query(`SELECT * FROM role`,
   function (err, res) {
     if (err) throw err;
     console.table(res);
@@ -209,7 +209,10 @@ updateRole = () => {
       },
     }
     ]).then((data) => {
-        
+        db.query(
+
+        )
+        mainPrompt();
     })
   })
 }
