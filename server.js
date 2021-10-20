@@ -1,29 +1,24 @@
 const inquirer = require('inquirer');
+const mysql = require('mysql2');
 const fs = require('fs');
 const cTable = require('console.table');
 
-const PORT = process.env.PORT || 3001;
-const app = express();
-
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
-
-app.use(express.static('public'));
+require('dotenv').config();
 
 const db = mysql.createConnection(
     {
         host: 'localhost',
-        user: DB_USER,
-        password: DB_PASSWORD,
-        database: DB_NAME
-      },
-      console.log(`Connected to the employees_db database.`)
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME
+    },
+    console.log(`Connected to the employees_db database.`)
 );
 
 db.connect(err => {
   if (err) throw err;
   mainPrompt();
-})
+});
 
 mainPrompt = () => {
     inquirer.prompt([
@@ -57,15 +52,12 @@ mainPrompt = () => {
                 updateRole();
                 break;
             case 'Done':
-                return;
+                process.exit();
         }
     })
 }
 
 addDepartment = () => {
-    db.query(`SELECT department_name AS "Department" FROM department`, (err, res) => {
-        if (err) throw err;
-
         inquirer.prompt([
             {
                 type: 'input',
@@ -73,21 +65,20 @@ addDepartment = () => {
                 name: 'dept'
             },
         ]) .then((data) => {
-            db.query(`INSERT INTO department(department_name) VALUES( ? )`, data.dept)
+            db.query(`INSERT INTO department(name) VALUES( ? )`, data.dept)
             mainPrompt();
         })
-    })
-}   
+}
 
 addRole = () => {
-    db.query(`SELECT title AS "Title" FROM role`, function (err, res) {
+    db.query(`SELECT * FROM department`, function (err, res) {
         if (err) throw err;
         
         inquirer.prompt([
             {
                 type: 'input',
                 message: 'What is the role name?',
-                name: 'role'
+                name: 'title'
             },
             {
                 type: 'input',
@@ -95,64 +86,67 @@ addRole = () => {
                 name: 'salary'
             },
             {
-                type: 'input',
-                message: 'What is the department for the role?',
-                name: 'roleDepartment'
-            },
-            {
                 type: 'list',
                 message: 'Select the department',
-                name: 'dept',
+                name: 'department_id',
                 choices: function () {
-                    const choiceArr = data[1].map(choice => choice.department_name);
+                    const choiceArr = res.map(choice => ({name: choice.name, value: choice.id}));
                     return choiceArr;
                 },
             }
         ]) .then((data) => {
-                db.query(`INSERT INTO role(title, salary, department_id)
-                VALUES ("${data.role}", "${data.salary}",
-                (SELECT id FROM departments WHERE name = "${data.dept}"));`
-                )
-            mainPrompt();
+                db.query(`INSERT INTO role SET ?`, data, function(err) {
+                    if (err) throw err;
+                    mainPrompt();
+                })
+            
         })
     })
 }
 
 addEmployee = () => {
-    db.query(`SELECT * from role; SELECT CONCAT (employee.first_name," ",employee.last_name) AS full_name FROM employee`)
+    db.query(`SELECT * from role`, function(err, res) {
+        if (err) throw err;
+    db.query(`SELECT * from employee`, function(err2, res2) {
+        if (err2) throw err2;
+    
     inquirer.prompt([
         {
             type: 'input',
             message: 'What is the employee\'s first name?',
-            name: 'firstName'
+            name: 'first_name'
         },
         {
             type: 'input',
             message: 'What is the employee\'s last name?',
-            name: 'lastName'
+            name: 'last_name'
         },
         {
             type: 'list',
             message: 'What is the employee\'s role?',
-            name: 'employeeRole',
+            name: 'role_id',
             choices: function () {
-                const choiceArr = results[0].map(choice => choice.title);
+                const choiceArr = res.map(choice => ({name: choice.title, value: choice.id}));
                 return choiceArr;
             }
         },
         {
-            type: 'input',
+            type: 'list',
             message: 'Who is the employee\'s manager?',
-            name: 'employeeManager'
+            name: 'manager_id',
+            choices: function () {
+                const choiceArr = res2.map(choice => ({name: choice.first_name + ' ' + choice.last_name, value: choice.id}));
+                return choiceArr;
+            }           
         },
     ]) .then((data) => {
-        db.query(
-            `INSERT INTO employee(first_name, last_name, role_id, manager_id) 
-            VALUES(?, ?, (SELECT id FROM role WHERE title = ?),
-            (SELECT id FROM (SELECT id FROM role WHERE CONCAT(first_name," ",last_name) = ? ) AS emptable))`, [data.first_name, data.last_name, data.role, data.manager]
-        )
-        mainPrompt();
+        db.query(`INSERT INTO employee SET ?`, data, function(err) {
+            if (err) throw err;
+            mainPrompt();
+        })
     })
+})
+})
 }
 
 showEmployees = () => {
@@ -183,44 +177,37 @@ showRoles = () => {
 }
 
 updateRole = () => {
-  db.query(`SELECT`,
-  function (err, res) {
-    if (err) throw err;
+    db.query(`SELECT * from role`, function(err, res) {
+        if (err) throw err;
+    db.query(`SELECT * from employee`, function(err2, res2) {
+        if (err2) throw err2;
+    
     inquirer.prompt([
-      {
-        type: 'list',
-        message: 'What is the employee\'s last name?',
-        name: 'lastName',
-        choices: function () {
-          const lastName = [];
-          for (var i = 0; i < res.length; i++) {
-            lastName.push(res[i].last_name);
-          }
-          return lastName;
-        }
-      },
-      {
-        type: 'list',
-        message: 'What is the employee\'s new role?',
-        name: 'newRole',
-        choices: function () {
-          const choiceArr = results[0].map(choice => choice.title);
-          return choiceArr;
-      },
-    }
-    ]).then((data) => {
-        db.query(
-
-        )
-        mainPrompt();
+        {
+            type: 'list',
+            message: 'Who is the employee?',
+            name: 'employee_id',
+            choices: function () {
+                const choiceArr = res2.map(choice => ({name: choice.first_name + ' ' + choice.last_name, value: choice.id}));
+                return choiceArr;
+            }           
+        },
+        {
+            type: 'list',
+            message: 'What is the employee\'s role?',
+            name: 'role_id',
+            choices: function () {
+                const choiceArr = res.map(choice => ({name: choice.title, value: choice.id}));
+                return choiceArr;
+            }
+        },
+        
+    ]) .then((data) => {
+        db.query(`UPDATE employee SET role_id = ? WHERE id = ?`, [data.employee_id, data.role_id], function(err) {
+            if (err) throw err;
+            mainPrompt();
+        })
     })
-  })
+})
+})
 }
-
-app.use((req, res) => {
-    res.status(404).end();
-  });
-  
-app.listen(PORT, () => {
-console.log(`Server running on port http://localhost:${PORT}`);
-});
