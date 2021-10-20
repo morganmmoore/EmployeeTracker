@@ -40,6 +40,6 @@ This application is covered under: None
 ## Questions
 
 * morganmmoore https://github.com/morganmmoore
-* morganmoore0@gmail.com
+* morganmmoore0@gmail.com
 * Contact me via email with further questions.
 
