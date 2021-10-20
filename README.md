@@ -30,7 +30,8 @@ Access the file in your terminal. When it is open:
 
 1. Install required programs by typing in ```npm install```
 2. type in ```node index.js``` to run the employee tracker.
-https://
+
+https://youtu.be/6hT4Bw1YNKk
 
 ## License
 
