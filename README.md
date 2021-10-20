@@ -9,7 +9,7 @@ The Employee Tracker allows the user to easily view and interact with informatio
 3. View all employees,
 4. Add a role,
 5. Add an employee,
-6. and Update and employee role
+6. and Update an employee role
 
 ## Table of Contents
 
